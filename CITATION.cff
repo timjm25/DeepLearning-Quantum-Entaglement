@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use this software in your research, please cite it using the metadata below."
+title: "DeepLearning-Quantum-Entanglement"
+abstract: >
+  A deep learning toolkit for quantum entanglement classification and
+  measure prediction. Uses a multi-task PyTorch neural network trained on
+  synthetically generated quantum states to predict entanglement probability,
+  Wootters concurrence, von Neumann entropy, and negativity from density matrices.
+authors:
+  - family-names: Maguire
+    given-names: Tim
+    alias: timjm25
+version: "1.0.0"
+date-released: "2026-06-25"
+license: MIT
+repository-code: "https://github.com/timjm25/DeepLearning-Quantum-Entaglement"
+keywords:
+  - quantum entanglement
+  - deep learning
+  - quantum information
+  - neural network
+  - concurrence
+  - negativity
+  - density matrix
+  - PyTorch
+  - physics
