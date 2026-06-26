@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Quantum Entanglement Predictor{% endblock %}</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a; --surface: #1e293b; --surface2: #263245;
+      --accent: #818cf8; --accent2: #34d399; --danger: #f87171;
+      --text: #e2e8f0; --muted: #94a3b8; --border: #334155;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+    nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 2rem; display: flex; align-items: center; gap: 2rem; height: 56px; }
+    nav .brand { font-weight: 700; font-size: 1.1rem; color: var(--accent); letter-spacing: -0.01em; }
+    nav a { color: var(--muted); text-decoration: none; font-size: 0.9rem; padding: 0.4rem 0.8rem; border-radius: 6px; transition: all 0.15s; }
+    nav a:hover { background: var(--surface2); color: var(--text); }
+    .container { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+    h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem; }
+    h2 { font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; color: var(--accent); }
+    h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+    .stat { text-align: center; padding: 1.25rem; background: var(--surface2); border-radius: 10px; }
+    .stat .val { font-size: 2rem; font-weight: 700; }
+    .stat .lbl { font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600; }
+    .badge-green  { background: #14532d; color: #86efac; }
+    .badge-red    { background: #450a0a; color: #fca5a5; }
+    .badge-amber  { background: #451a03; color: #fdba74; }
+    .badge-purple { background: #2e1065; color: #c4b5fd; }
+    select, input[type=range], input[type=number] { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 0.5rem 0.75rem; font-size: 0.9rem; width: 100%; }
+    button { background: var(--accent); color: #0f172a; border: none; border-radius: 8px; padding: 0.65rem 1.5rem; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: opacity 0.15s; }
+    button:hover { opacity: 0.85; }
+    label { font-size: 0.85rem; color: var(--muted); display: block; margin-bottom: 0.4rem; }
+    .form-group { margin-bottom: 1rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th, td { padding: 0.65rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    code { background: var(--surface2); padding: 0.15rem 0.4rem; border-radius: 4px; font-family: monospace; font-size: 0.85rem; color: var(--accent2); }
+    pre { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow-x: auto; font-size: 0.85rem; line-height: 1.6; color: var(--text); }
+    .alert-danger { background: #450a0a; border: 1px solid #7f1d1d; border-radius: 8px; padding: 1rem; color: #fca5a5; margin-bottom: 1rem; }
+    .alert-success { background: #14532d; border: 1px solid #166534; border-radius: 8px; padding: 1rem; color: #86efac; margin-bottom: 1rem; }
+    p { line-height: 1.7; color: var(--text); }
+    @media (max-width: 768px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<nav>
+  <span class="brand">&#9883; Quantum Entanglement Predictor</span>
+  <a href="/">Predictor</a>
+  <a href="/about">Theory</a>
+  <a href="/api/states">API</a>
+</nav>
+<div class="container">
+  {% block content %}{% endblock %}
+</div>
+</body>
+</html>

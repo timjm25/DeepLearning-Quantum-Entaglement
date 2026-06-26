@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block title %}Quantum Entanglement Predictor{% endblock %}
+{% block content %}
+<h1>Quantum Entanglement Predictor</h1>
+<p style="color:var(--muted); margin-bottom:2rem;">Select a quantum state. The deep learning model predicts entanglement probability and estimates concurrence, entropy, and negativity.</p>
+
+<div class="grid-2">
+  <div class="card">
+    <h2>State Selection</h2>
+    <div class="form-group">
+      <label>State Type</label>
+      <select id="stateType" onchange="onStateChange()">
+        <option value="bell_phi_plus">Bell |&Phi;+&rang; &mdash; (|00&rang;+|11&rang;)/&radic;2</option>
+        <option value="bell_phi_minus">Bell |&Phi;-&rang; &mdash; (|00&rang;-|11&rang;)/&radic;2</option>
+        <option value="bell_psi_plus">Bell |&Psi;+&rang; &mdash; (|01&rang;+|10&rang;)/&radic;2</option>
+        <option value="bell_psi_minus">Bell |&Psi;-&rang; &mdash; (|01&rang;-|10&rang;)/&radic;2</option>
+        <option value="werner">Werner State &rho;(p)</option>
+        <option value="product">Product State (Separable)</option>
+        <option value="random_pure">Random Pure State (Haar)</option>
+      </select>
+    </div>
+
+    <div id="wernerGroup" class="form-group" style="display:none">
+      <label>Werner parameter p: <span id="wernerVal">0.80</span> &nbsp;(entangled iff p &gt; 0.33)</label>
+      <input type="range" id="wernerP" min="0" max="1" step="0.01" value="0.80"
+             oninput="document.getElementById('wernerVal').textContent=parseFloat(this.value).toFixed(2)">
+    </div>
+
+    <button onclick="runPrediction()">Predict Entanglement</button>
+
+    <div id="loadingMsg" style="display:none; margin-top:1rem; color:var(--muted);">Running prediction...</div>
+    <div id="errorMsg" style="display:none" class="alert-danger"></div>
+  </div>
+
+  <div class="card" id="resultPanel" style="display:none">
+    <h2>Prediction Result</h2>
+    <div style="text-align:center; margin-bottom:1.5rem;">
+      <div style="font-size:3.5rem; font-weight:800;" id="probDisplay">&mdash;</div>
+      <div style="color:var(--muted); font-size:0.9rem; margin-top:0.25rem;">Entanglement Probability</div>
+      <div style="margin-top:0.75rem;" id="entanglementBadge"></div>
+    </div>
+    <div class="grid-3" id="measureTiles"></div>
+  </div>
+</div>
+
+<div class="grid-2" id="chartRow" style="display:none">
+  <div class="card">
+    <h2>Predicted vs. Exact Measures</h2>
+    <canvas id="measuresChart" height="200"></canvas>
+  </div>
+  <div class="card">
+    <h2>Density Matrix (Real Part)</h2>
+    <div id="dmHeatmap" style="display:grid; gap:3px; margin-top:0.5rem;"></div>
+  </div>
+</div>
+
+<div class="card" id="exactCard" style="display:none">
+  <h2>Exact Entanglement Measures</h2>
+  <table>
+    <thead><tr><th>Measure</th><th>Value</th><th>Interpretation</th></tr></thead>
+    <tbody id="exactTable"></tbody>
+  </table>
+</div>
+
+<script>
+let measuresChart = null;
+
+function onStateChange() {
+  const type = document.getElementById("stateType").value;
+  document.getElementById("wernerGroup").style.display = type === "werner" ? "block" : "none";
+}
+
+async function runPrediction() {
+  const type = document.getElementById("stateType").value;
+  const wernerP = parseFloat(document.getElementById("wernerP").value);
+  document.getElementById("loadingMsg").style.display = "block";
+  document.getElementById("errorMsg").style.display = "none";
+  document.getElementById("resultPanel").style.display = "none";
+  document.getElementById("chartRow").style.display = "none";
+  document.getElementById("exactCard").style.display = "none";
+
+  try {
+    const resp = await fetch("/api/predict", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({state_type: type, werner_p: wernerP, n_qubits: 2})
+    });
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    const data = await resp.json();
+    renderResult(data);
+  } catch(e) {
+    document.getElementById("errorMsg").textContent = "Prediction failed: " + e.message;
+    document.getElementById("errorMsg").style.display = "block";
+  }
+  document.getElementById("loadingMsg").style.display = "none";
+}
+
+function renderResult(data) {
+  const p = data.prediction;
+  const exact = data.exact_measures;
+
+  const pct = (p.entanglement_probability * 100).toFixed(1) + "%";
+  document.getElementById("probDisplay").textContent = pct;
+  document.getElementById("probDisplay").style.color = p.is_entangled ? "#818cf8" : "#f87171";
+
+  const badgeEl = document.getElementById("entanglementBadge");
+  badgeEl.innerHTML = p.is_entangled
+    ? `<span class="badge badge-purple">ENTANGLED</span>&nbsp;<span class="badge badge-green">Confidence: ${p.confidence}</span>`
+    : `<span class="badge badge-red">SEPARABLE</span>&nbsp;<span class="badge badge-amber">Confidence: ${p.confidence}</span>`;
+
+  const tiles = [
+    {label: "Concurrence",   pred: p.predicted_concurrence, exact: exact.concurrence},
+    {label: "Ent. Entropy",  pred: p.predicted_entropy,     exact: exact.entanglement_entropy},
+    {label: "Negativity",    pred: p.predicted_negativity,  exact: exact.negativity},
+  ];
+  document.getElementById("measureTiles").innerHTML = tiles.map(t =>
+    `<div class="stat">
+      <div class="val" style="font-size:1.5rem;color:var(--accent)">${t.pred.toFixed(3)}</div>
+      <div style="font-size:0.75rem;color:var(--accent2)">exact: ${t.exact.toFixed(3)}</div>
+      <div class="lbl">${t.label}</div>
+    </div>`
+  ).join("");
+
+  document.getElementById("resultPanel").style.display = "block";
+  renderMeasuresChart(p, exact);
+  renderDMHeatmap(data.density_matrix_real);
+  document.getElementById("chartRow").style.display = "grid";
+  renderExactTable(exact);
+  document.getElementById("exactCard").style.display = "block";
+}
+
+function renderMeasuresChart(pred, exact) {
+  const ctx = document.getElementById("measuresChart").getContext("2d");
+  if (measuresChart) measuresChart.destroy();
+  measuresChart = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: ["Concurrence", "Entanglement Entropy", "Negativity"],
+      datasets: [
+        {label: "Neural Net Prediction",
+         data: [pred.predicted_concurrence, pred.predicted_entropy, pred.predicted_negativity],
+         backgroundColor: "rgba(129,140,248,0.75)", borderRadius: 6},
+        {label: "Exact (Analytic)",
+         data: [exact.concurrence, exact.entanglement_entropy, exact.negativity],
+         backgroundColor: "rgba(52,211,153,0.75)", borderRadius: 6},
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {legend: {labels: {color: "#e2e8f0"}}},
+      scales: {
+        x: {ticks: {color: "#94a3b8"}, grid: {color: "#1e293b"}},
+        y: {min: 0, max: 1, ticks: {color: "#94a3b8"}, grid: {color: "#334155"}},
+      }
+    }
+  });
+}
+
+function renderDMHeatmap(dmReal) {
+  const n = dmReal.length;
+  const flat = dmReal.flat();
+  const absMax = Math.max(...flat.map(Math.abs), 0.001);
+  const heatmap = document.getElementById("dmHeatmap");
+  heatmap.style.gridTemplateColumns = `repeat(${n}, 1fr)`;
+  heatmap.innerHTML = flat.map(v => {
+    const norm = v / absMax;
+    const r = norm > 0 ? Math.round(norm * 129) : 0;
+    const g = norm > 0 ? Math.round(norm * 140) : Math.round(-norm * 200);
+    const b = norm > 0 ? Math.round(norm * 248) : 0;
+    return `<div title="${v.toFixed(4)}" style="aspect-ratio:1;background:rgb(${r},${g},${b});border-radius:3px;min-height:40px;"></div>`;
+  }).join("");
+}
+
+function renderExactTable(exact) {
+  const c = exact.concurrence;
+  const rows = [
+    {name: "Concurrence", val: c.toFixed(6),
+     interp: c > 0.9 ? "Maximally entangled" : c > 0.5 ? "Strongly entangled" : c > 0.01 ? "Weakly entangled" : "Separable"},
+    {name: "Entanglement Entropy", val: exact.entanglement_entropy.toFixed(6), interp: "Entropy of reduced density matrix (ebits)"},
+    {name: "Negativity", val: exact.negativity.toFixed(6),
+     interp: exact.negativity > 0.01 ? "NPT state &mdash; definitively entangled" : "PPT state"},
+    {name: "Von Neumann Entropy", val: exact.von_neumann_entropy.toFixed(6),
+     interp: exact.is_pure ? "Pure state (S&asymp;0 expected)" : "Mixed state"},
+    {name: "Purity Tr(&rho;&sup2;)", val: exact.purity.toFixed(6),
+     interp: exact.is_pure ? "Pure state" : "Mixed state"},
+    {name: "PPT Criterion", val: exact.is_ppt ? "Passes" : "Fails",
+     interp: exact.is_ppt ? "May be separable" : "Definitively entangled (NPT)"},
+  ];
+  document.getElementById("exactTable").innerHTML = rows.map(r =>
+    `<tr><td><strong>${r.name}</strong></td><td><code>${r.val}</code></td><td style="color:var(--muted)">${r.interp}</td></tr>`
+  ).join("");
+}
+</script>
+{% endblock %}

@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Theory &mdash; Quantum Entanglement{% endblock %}
+{% block content %}
+<h1>Quantum Entanglement &mdash; Theory</h1>
+<p style="color:var(--muted); margin-bottom:2rem;">Background theory and key references for researchers using this tool.</p>
+
+<div class="card">
+  <h2>What is Quantum Entanglement?</h2>
+  <p style="margin-bottom:1rem;">Quantum entanglement is a phenomenon where two or more particles become correlated such that the quantum state of each particle cannot be described independently of the others &mdash; even when separated by arbitrarily large distances. First described by Einstein, Podolsky and Rosen in 1935 as the &ldquo;EPR paradox,&rdquo; entanglement has since become the foundational resource for quantum computing, quantum cryptography, and quantum teleportation.</p>
+  <p>A bipartite quantum state &rho; is <strong style="color:var(--accent)">entangled</strong> if it cannot be written as a product state &rho; = &rho;<sub>A</sub> &otimes; &rho;<sub>B</sub>. For pure states, this is equivalent to the reduced density matrix being mixed (non-pure). For mixed states, determining separability is NP-hard in general &mdash; motivating the machine learning approach implemented here.</p>
+</div>
+
+<div class="card">
+  <h2>Key Quantum States</h2>
+  <table>
+    <thead><tr><th>State</th><th>Formula</th><th>Properties</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Bell |&Phi;+&rang;</strong></td><td><code>(|00&rang; + |11&rang;) / &radic;2</code></td><td>Maximally entangled, C=1, used in quantum teleportation</td></tr>
+      <tr><td><strong>Bell |&Phi;-&rang;</strong></td><td><code>(|00&rang; - |11&rang;) / &radic;2</code></td><td>Maximally entangled, C=1</td></tr>
+      <tr><td><strong>Bell |&Psi;+&rang;</strong></td><td><code>(|01&rang; + |10&rang;) / &radic;2</code></td><td>Maximally entangled, C=1</td></tr>
+      <tr><td><strong>Bell |&Psi;-&rang;</strong></td><td><code>(|01&rang; - |10&rang;) / &radic;2</code></td><td>Singlet state; ground state of isotropic Heisenberg model</td></tr>
+      <tr><td><strong>GHZ (n-qubit)</strong></td><td><code>(|00...0&rang; + |11...1&rang;) / &radic;2</code></td><td>Maximally multipartite entangled; fragile to particle loss</td></tr>
+      <tr><td><strong>W State (n-qubit)</strong></td><td><code>(|100&rang; + |010&rang; + |001&rang;) / &radic;3</code></td><td>Robust to particle loss; different entanglement class from GHZ</td></tr>
+      <tr><td><strong>Werner State</strong></td><td><code>p|&Psi;-&rang;&lang;&Psi;-| + (1-p)I/4</code></td><td>Entangled iff p &gt; 1/3 (PPT boundary)</td></tr>
+      <tr><td><strong>Product State</strong></td><td><code>|&psi;&rang;<sub>A</sub> &otimes; |&phi;&rang;<sub>B</sub></code></td><td>Separable &mdash; no entanglement</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2>Entanglement Measures</h2>
+
+  <h3>Concurrence (Wootters, 1998)</h3>
+  <p style="margin-bottom:0.75rem;">The Wootters concurrence C(&rho;) &isin; [0,1] quantifies entanglement for 2-qubit mixed states. C=0 means separable; C=1 means maximally entangled.</p>
+  <pre>C(&#961;) = max(0, &#955;&#8321; - &#955;&#8322; - &#955;&#8323; - &#955;&#8324;)
+
+where &#955;&#7522; are the eigenvalues in decreasing order of:
+  R = &#8730;(&#8730;&#961; &#183; &#961;&#771; &#183; &#8730;&#961;)
+
+and &#961;&#771; = (&#963;y &#8855; &#963;y) &#961;* (&#963;y &#8855; &#963;y)   [spin-flip operation]</pre>
+
+  <h3 style="margin-top:1.5rem;">Von Neumann Entropy</h3>
+  <pre>S(&#961;) = -Tr(&#961; log&#8322; &#961;) = -&#931;&#7522; &#955;&#7522; log&#8322; &#955;&#7522;
+
+For pure bipartite states: E(|&#968;&#9002;) = S(&#961;_A) where &#961;_A = Tr_B(|&#968;&#9002;&#9001;&#968;|)</pre>
+
+  <h3 style="margin-top:1.5rem;">Negativity (Peres-Horodecki)</h3>
+  <pre>N(&#961;) = ( &#8741;&#961;&#8315;&#915;&#8336;&#8741;&#8321; - 1 ) / 2
+
+&#961;&#8315;&#915;&#8336; is the partial transpose of &#961; with respect to subsystem A.
+If N &gt; 0: the state is entangled (NPT state).
+For 2&#215;2 and 2&#215;3 systems, PPT &#8660; separable (Peres 1996, Horodecki 1996).</pre>
+</div>
+
+<div class="card">
+  <h2>Deep Learning Architecture &mdash; EntanglementNet</h2>
+  <p style="margin-bottom:1rem;">A multi-task neural network trained on synthetically generated quantum states with analytically computed entanglement labels. The separability problem for mixed states is NP-hard in general; the network provides fast, approximate classification and continuous measure estimation.</p>
+  <pre>Input: density matrix &#961; (4&#215;4 complex &#8594; 32 real features)
+       [Re(&#961;&#8320;&#8320;),...,Re(&#961;&#8323;&#8323;), Im(&#961;&#8320;&#8320;),...,Im(&#961;&#8323;&#8323;)]
+
+Backbone:
+  Linear(32, 256) &#8594; BatchNorm &#8594; ReLU &#8594; Dropout(0.3)
+  Linear(256, 128) &#8594; BatchNorm &#8594; ReLU &#8594; Dropout(0.2)
+  Linear(128, 64)  &#8594; ReLU
+
+Classification head:               Regression head:
+  Linear(64, 32) &#8594; ReLU             Linear(64, 32) &#8594; ReLU
+  Linear(32, 1)  &#8594; Sigmoid           Linear(32, 3)  &#8594; Sigmoid
+  P(entangled) &#8712; [0,1]             [concurrence, entropy, negativity] &#8712; [0,1]
+
+Multi-task loss:
+  L = BCE(&#375;_cls, y_cls) + 0.5 &#215; MSE(&#375;_reg, y_reg)</pre>
+  <p style="margin-top:1rem; color:var(--muted);">Training dataset: 8,000 states &mdash; Bell states, Haar-random pure states, product states, Werner states (all p values), and random mixed states. Adam optimiser with cosine annealing LR schedule over 40 epochs.</p>
+</div>
+
+<div class="card">
+  <h2>Key References</h2>
+  <table>
+    <thead><tr><th>Authors</th><th>Title</th><th>Year</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Einstein, Podolsky, Rosen</td>
+        <td><a href="https://journals.aps.org/pr/abstract/10.1103/PhysRev.47.777" style="color:var(--accent)" target="_blank" rel="noopener">Can Quantum-Mechanical Description of Physical Reality Be Considered Complete?</a></td>
+        <td>1935</td>
+      </tr>
+      <tr>
+        <td>J.S. Bell</td>
+        <td><a href="https://cds.cern.ch/record/111654/files/vol1p195-200_001.pdf" style="color:var(--accent)" target="_blank" rel="noopener">On the Einstein-Podolsky-Rosen Paradox</a></td>
+        <td>1964</td>
+      </tr>
+      <tr>
+        <td>Aspect, Grangier, Roger</td>
+        <td><a href="https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.49.91" style="color:var(--accent)" target="_blank" rel="noopener">Experimental Tests of Bell's Inequalities Using Time-Varying Analyzers</a></td>
+        <td>1982</td>
+      </tr>
+      <tr>
+        <td>Peres</td>
+        <td><a href="https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.77.1413" style="color:var(--accent)" target="_blank" rel="noopener">Separability Criterion for Density Matrices</a></td>
+        <td>1996</td>
+      </tr>
+      <tr>
+        <td>Horodecki, Horodecki, Horodecki</td>
+        <td><a href="https://www.sciencedirect.com/science/article/abs/pii/0375960196007062" style="color:var(--accent)" target="_blank" rel="noopener">Separability of Mixed States: Necessary and Sufficient Conditions</a></td>
+        <td>1996</td>
+      </tr>
+      <tr>
+        <td>Wootters</td>
+        <td><a href="https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.80.2245" style="color:var(--accent)" target="_blank" rel="noopener">Entanglement of Formation of an Arbitrary State of Two Qubits</a></td>
+        <td>1998</td>
+      </tr>
+      <tr>
+        <td>Nielsen &amp; Chuang</td>
+        <td><a href="https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE" style="color:var(--accent)" target="_blank" rel="noopener">Quantum Computation and Quantum Information</a></td>
+        <td>2000</td>
+      </tr>
+      <tr>
+        <td>Horodecki et al.</td>
+        <td><a href="https://journals.aps.org/rmp/abstract/10.1103/RevModPhys.81.865" style="color:var(--accent)" target="_blank" rel="noopener">Quantum Entanglement (Rev. Mod. Phys. review)</a></td>
+        <td>2009</td>
+      </tr>
+      <tr>
+        <td>Gao et al.</td>
+        <td><a href="https://arxiv.org/abs/1712.09912" style="color:var(--accent)" target="_blank" rel="noopener">Experimental Machine Learning of Quantum States</a></td>
+        <td>2018</td>
+      </tr>
+      <tr>
+        <td>Carleo et al.</td>
+        <td><a href="https://arxiv.org/abs/1910.08918" style="color:var(--accent)" target="_blank" rel="noopener">Machine Learning and the Physical Sciences (Rev. Mod. Phys.)</a></td>
+        <td>2019</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+{% endblock %}
